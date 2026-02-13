@@ -13,8 +13,9 @@ const loginSessions = {};
 const otpStore = {};
 
 // Middleware
-app.use(requestLogger);
+//app.use(requestLogger);
 app.use(express.json());
+app.use(cookieParser());
 
 
 app.get("/", (req, res) => {
@@ -34,44 +35,31 @@ app.post("/auth/login", (req, res) => {
       return res.status(400).json({ error: "Email and password required" });
     }
 
-    // Generate session and OTP
-    const loginSessionId = Math.random().toString(36).substring(7);
-    const otp = Math.floor(100000 + Math.random() * 900000); // 6-digit OTP
+    const loginSessionId = Math.random().toString(36).substring(2, 15);
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Store session with 2-minute expiry
     loginSessions[loginSessionId] = {
       email,
-      password,
       createdAt: Date.now(),
-      expiresAt: Date.now() + 2 * 60 * 1000, // 2 minutes
+      expiresAt: Date.now() + 2 * 60 * 1000,
     };
 
-    // Store OTP
     otpStore[loginSessionId] = otp;
 
-    console.log(`[OTP] Session ${loginSessionId} generated`);
+    console.log(`[OTP] ${otp} for session ${loginSessionId}`);
 
-    return res.status(200).json({
-      message: "OTP sent",
+    return res.json({
+      message: "OTP generated",
       loginSessionId,
     });
-  } catch (error) {
-    return res.status(500).json({
-      status: "error",
-      message: "Login failed",
-    });
+  } catch {
+    return res.status(500).json({ error: "Login failed" });
   }
 });
 
 app.post("/auth/verify-otp", (req, res) => {
   try {
     const { loginSessionId, otp } = req.body;
-
-    if (!loginSessionId || !otp) {
-      return res
-        .status(400)
-        .json({ error: "loginSessionId and otp required" });
-    }
 
     const session = loginSessions[loginSessionId];
 
@@ -83,69 +71,49 @@ app.post("/auth/verify-otp", (req, res) => {
       return res.status(401).json({ error: "Session expired" });
     }
 
-    if (parseInt(otp) !== otpStore[loginSessionId]) {
+    if (otp !== otpStore[loginSessionId]) {
       return res.status(401).json({ error: "Invalid OTP" });
     }
 
-    res.cookie("session_token", loginSessionId, {
+    res.cookie("sessionId", loginSessionId, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 15 * 60 * 1000, // 15 minutes
+      maxAge: 15 * 60 * 1000,
     });
 
     delete otpStore[loginSessionId];
 
-    return res.status(200).json({
-      message: "OTP verified",
-      sessionId: loginSessionId,
-    });
-  } catch (error) {
-    return res.status(500).json({
-      status: "error",
-      message: "OTP verification failed",
-    });
+    return res.json({ message: "OTP verified" });
+  } catch {
+    return res.status(500).json({ error: "OTP verification failed" });
   }
 });
 
 app.post("/auth/token", (req, res) => {
   try {
-    const token = req.headers.authorization;
+    const sessionId = req.cookies?.sessionId;
 
-    if (!token) {
-      return res
-        .status(401)
-        .json({ error: "Unauthorized - valid session required" });
+    if (!sessionId) {
+      return res.status(401).json({ error: "Session cookie missing" });
     }
 
-    const session = loginSessions[token.replace("Bearer ", "")];
+    const session = loginSessions[sessionId];
 
     if (!session) {
       return res.status(401).json({ error: "Invalid session" });
     }
 
-    // Generate JWT
-    const secret = process.env.JWT_SECRET || "default-secret-key";
-
     const accessToken = jwt.sign(
-      {
-        email: session.email,
-        sessionId: token,
-      },
-      secret,
-      {
-        expiresIn: "15m",
-      }
+      { email: session.email },
+      process.env.JWT_SECRET || "default-secret-key",
+      { expiresIn: "15m" }
     );
 
-    return res.status(200).json({
+    return res.json({
       access_token: accessToken,
       expires_in: 900,
     });
-  } catch (error) {
-    return res.status(500).json({
-      status: "error",
-      message: "Token generation failed",
-    });
+  } catch {
+    return res.status(500).json({ error: "Token generation failed" });
   }
 });
 
