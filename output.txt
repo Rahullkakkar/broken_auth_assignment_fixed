@@ -1,15 +1,15 @@
 1. LOGIN
 $ curl -X POST http://localhost:3000/auth/login \
 -H "Content-Type: application/json" \
---data '{"email":"a@a.com","password":"123"}'
+--data '{"email":"rahulkakkar1104@gmail.com","password":"123"}'
 
-{"message":"OTP generated","loginSessionId":"z5guxas9cuk"}
+{"message":"OTP generated","loginSessionId":"ow3cidtdo4r"}
 
 
 2. VERIFY OTP
 $ curl -c cookies.txt -X POST http://localhost:3000/auth/verify-otp \
 -H "Content-Type: application/json" \
---data '{"loginSessionId":"z5guxas9cuk","otp":"607466"}'
+--data '{"loginSessionId":"ow3cidtdo4r","otp":"136185"}'
 
 {"message":"OTP verified"}
 
@@ -17,11 +17,11 @@ $ curl -c cookies.txt -X POST http://localhost:3000/auth/verify-otp \
 3. GET TOKEN
 $ curl -b cookies.txt -X POST http://localhost:3000/auth/token
 
-{"access_token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...","expires_in":900}
+{"access_token":"eyJhbGciOiJIUzI1NiIs...","expires_in":900}
 
 
 4. ACCESS PROTECTED ROUTE
-$ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+$ curl -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIs..." \
 http://localhost:3000/protected
 
-{"message":"Access granted","user":{"email":"a@a.com","iat":1770991965,"exp":1770992865},"success_flag":"FLAG-YUBhLmNvbV9DT01QTEVURURfQVNTSUdOTUVOVA=="}
+{"message":"Access granted","user":{"email":"rahulkakkar1104@gmail.com"},"success_flag":"FLAG-..."}

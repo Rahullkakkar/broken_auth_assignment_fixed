@@ -59,7 +59,10 @@ app.post("/auth/login", (req, res) => {
 
 app.post("/auth/verify-otp", (req, res) => {
   try {
-    const { loginSessionId, otp } = req.body;
+    const { loginSessionId, otp } = req.body; // 👈 THIS WAS MISSING OR ABOVE LOGS
+
+    console.log("VERIFY loginSessionId:", loginSessionId);
+    console.log("LOGIN SESSIONS:", loginSessions);
 
     const session = loginSessions[loginSessionId];
 
@@ -83,7 +86,8 @@ app.post("/auth/verify-otp", (req, res) => {
     delete otpStore[loginSessionId];
 
     return res.json({ message: "OTP verified" });
-  } catch {
+  } catch (error) {
+    console.error(error);
     return res.status(500).json({ error: "OTP verification failed" });
   }
 });
